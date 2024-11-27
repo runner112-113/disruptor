@@ -455,6 +455,7 @@ public final class RingBuffer<E> extends RingBufferFields<E> implements Cursored
     public void publishEvent(final EventTranslator<E> translator)
     {
         final long sequence = sequencer.next();
+        // EventTranslator 会将预填充到RingBuffer中的Event那处理处理
         translateAndPublish(translator, sequence);
     }
 

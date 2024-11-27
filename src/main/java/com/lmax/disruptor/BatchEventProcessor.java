@@ -34,12 +34,18 @@ public final class BatchEventProcessor<T>
     private static final int HALTED = IDLE + 1;
     private static final int RUNNING = HALTED + 1;
 
+    // 表示当前事件处理器的运行状态
     private final AtomicInteger running = new AtomicInteger(IDLE);
+    // 异常处理器
     private ExceptionHandler<? super T> exceptionHandler;
+    // 数据提供者(RingBuffer)
     private final DataProvider<T> dataProvider;
+    // 序列栅栏
     private final SequenceBarrier sequenceBarrier;
+    // 真正处理事件的回调接口
     private final EventHandlerBase<? super T> eventHandler;
     private final int batchLimitOffset;
+    // 事件处理器使用的序列
     private final Sequence sequence = new Sequence(Sequencer.INITIAL_CURSOR_VALUE);
     private final RewindHandler rewindHandler;
     private int retriesAttempted = 0;
@@ -76,7 +82,9 @@ public final class BatchEventProcessor<T>
     @Override
     public void halt()
     {
+        // 设置运行状态为false
         running.set(HALTED);
+        // 通知序列栅栏
         sequenceBarrier.alert();
     }
 
@@ -112,8 +120,10 @@ public final class BatchEventProcessor<T>
         int witnessValue = running.compareAndExchange(IDLE, RUNNING);
         if (witnessValue == IDLE) // Successful CAS
         {
+            // 先清除序列栅栏的通知状态
             sequenceBarrier.clearAlert();
 
+            // 如果eventHandler实现了LifecycleAware，这里会对其进行一个启动通知
             notifyStart();
             try
             {
@@ -124,7 +134,9 @@ public final class BatchEventProcessor<T>
             }
             finally
             {
+                // 主循环退出后，如果eventHandler实现了LifecycleAware，这里会对其进行一个停止通知
                 notifyShutdown();
+                // 设置事件处理器运行状态为停止
                 running.set(IDLE);
             }
         }
@@ -144,6 +156,7 @@ public final class BatchEventProcessor<T>
     private void processEvents()
     {
         T event = null;
+        // 获取要申请的序列值
         long nextSequence = sequence.get() + 1L;
 
         while (true)
@@ -153,6 +166,7 @@ public final class BatchEventProcessor<T>
             {
                 try
                 {
+                    // 通过序列栅栏来等待可用的序列值
                     final long availableSequence = sequenceBarrier.waitFor(nextSequence);
                     final long endOfBatchSequence = min(nextSequence + batchLimitOffset, availableSequence);
 
@@ -163,13 +177,16 @@ public final class BatchEventProcessor<T>
 
                     while (nextSequence <= endOfBatchSequence)
                     {
+                        // 获取事件
                         event = dataProvider.get(nextSequence);
+                        // 将事件交给eventHandler处理
                         eventHandler.onEvent(event, nextSequence, nextSequence == endOfBatchSequence);
                         nextSequence++;
                     }
 
                     retriesAttempted = 0;
 
+                    // 处理完毕后，设置当前处理完成的最后序列值
                     sequence.set(endOfBatchSequence);
                 }
                 catch (final RewindableException e)
@@ -179,10 +196,12 @@ public final class BatchEventProcessor<T>
             }
             catch (final TimeoutException e)
             {
+                // 如果发生超时，通知一下超时处理器(如果eventHandler同时实现了timeoutHandler，会将其设置为当前的超时处理器)
                 notifyTimeout(sequence.get());
             }
             catch (final AlertException ex)
             {
+                // 如果捕获了序列栅栏变更通知，并且当前事件处理器停止了，那么退出主循环
                 if (running.get() != RUNNING)
                 {
                     break;
@@ -190,7 +209,9 @@ public final class BatchEventProcessor<T>
             }
             catch (final Throwable ex)
             {
+                // 其他的异常都交给异常处理器进行处理
                 handleEventException(ex, nextSequence, event);
+                // 处理异常后仍然会设置当前处理的最后的序列值，然后继续处理其他事件
                 sequence.set(nextSequence);
                 nextSequence++;
             }

@@ -39,6 +39,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
 
     // availableBuffer tracks the state of each ringbuffer slot
     // see below for more details on the approach
+    // availableBuffer是用来记录每一个ringbuffer槽的状态
     private final int[] availableBuffer;
     private final int indexMask;
     private final int indexShift;
@@ -53,6 +54,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
     {
         super(bufferSize, waitStrategy);
         availableBuffer = new int[bufferSize];
+        // 初始化为-1
         Arrays.fill(availableBuffer, -1);
 
         indexMask = bufferSize - 1;
@@ -229,6 +231,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
      */
     private void setAvailable(final long sequence)
     {
+        // 将当前序列值的可用状态记录到availableBuffer里面
         setAvailableBufferValue(calculateIndex(sequence), calculateAvailabilityFlag(sequence));
     }
 

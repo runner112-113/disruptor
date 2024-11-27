@@ -40,6 +40,9 @@ class RhsPadding extends Value
  *
  * <p>Also attempts to be more efficient with regards to false
  * sharing by adding padding around the volatile field.
+ *
+ *
+ * Sequence是一个做了缓存行填充优化的原子序列
  */
 public class Sequence extends RhsPadding
 {
@@ -95,6 +98,8 @@ public class Sequence extends RhsPadding
      * a Store/Store barrier between this write and any previous
      * store.
      *
+     * 在当前写操作和任意之前的读操作之间加入Store/Store屏障
+     *
      * @param value The new value for the sequence.
      */
     public void set(final long value)
@@ -108,6 +113,9 @@ public class Sequence extends RhsPadding
      * a Store/Store barrier between this write and any previous
      * write and a Store/Load barrier between this write and any
      * subsequent volatile read.
+     *
+     *  在当前写操作和任意之前的读操作之间加入Store/Store屏障
+     *  在当前写操作和任意之后的读操作之间加入Store/Load屏障
      *
      * @param value The new value for the sequence.
      */

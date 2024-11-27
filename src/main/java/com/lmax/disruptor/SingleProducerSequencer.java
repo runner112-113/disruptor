@@ -96,6 +96,8 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
     {
         long nextValue = this.nextValue;
 
+        // nextValue + requiredCapacity:事件发布者要申请的序列值
+        // cachedValue:之前事件处理者申请的序列值
         long wrapPoint = (nextValue + requiredCapacity) - bufferSize;
         long cachedGatingSequence = this.cachedValue;
 
@@ -222,6 +224,7 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
     @Override
     public void publish(final long sequence)
     {
+        // 先设置内部游标值，然后唤醒等待的事件处理者。
         cursor.set(sequence);
         waitStrategy.signalAllWhenBlocking();
     }
