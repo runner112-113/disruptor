@@ -39,10 +39,12 @@ final class ProcessingSequenceBarrier implements SequenceBarrier
         this.cursorSequence = cursorSequence;
         if (0 == dependentSequences.length)
         {
+            // 单生产者模式
             dependentSequence = cursorSequence;
         }
         else
         {
+            // 所有的生产者队列
             dependentSequence = new FixedSequenceGroup(dependentSequences);
         }
     }
@@ -60,6 +62,8 @@ final class ProcessingSequenceBarrier implements SequenceBarrier
             return availableSequence;
         }
 
+        // 单生产者直接返回availableSequence
+        // 多生产者需要判断是否准备好
         return sequencer.getHighestPublishedSequence(sequence, availableSequence);
     }
 

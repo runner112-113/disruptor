@@ -42,6 +42,7 @@ public final class BlockingWaitStrategy implements WaitStrategy
             }
         }
 
+        // 多生产者模式下是获取最小的可用游标
         while ((availableSequence = dependentSequence.get()) < sequence)
         {
             barrier.checkAlert();

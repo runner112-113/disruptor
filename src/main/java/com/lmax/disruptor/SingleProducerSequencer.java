@@ -108,6 +108,7 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
                 cursor.setVolatile(nextValue);  // StoreLoad fence
             }
 
+            // 获取消费者最小的消费点
             long minSequence = Util.getMinimumSequence(gatingSequences, nextValue);
             this.cachedValue = minSequence;
 

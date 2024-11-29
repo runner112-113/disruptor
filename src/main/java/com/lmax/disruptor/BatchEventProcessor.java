@@ -167,6 +167,7 @@ public final class BatchEventProcessor<T>
                 try
                 {
                     // 通过序列栅栏来等待可用的序列值
+                    // 可能nextSequence =9，而availableSequence=12
                     final long availableSequence = sequenceBarrier.waitFor(nextSequence);
                     final long endOfBatchSequence = min(nextSequence + batchLimitOffset, availableSequence);
 
@@ -175,6 +176,7 @@ public final class BatchEventProcessor<T>
                         eventHandler.onBatchStart(endOfBatchSequence - nextSequence + 1, availableSequence - nextSequence + 1);
                     }
 
+                    // 批量数据进行迭代处理
                     while (nextSequence <= endOfBatchSequence)
                     {
                         // 获取事件

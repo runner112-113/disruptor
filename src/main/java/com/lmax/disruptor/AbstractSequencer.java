@@ -33,6 +33,8 @@ public abstract class AbstractSequencer implements Sequencer
     protected final int bufferSize;
     protected final WaitStrategy waitStrategy;
     protected final Sequence cursor = new Sequence(Sequencer.INITIAL_CURSOR_VALUE);
+    // 所有的消费者消费Sequence
+    // 防止让RingBuffer重叠，需要检查所有的消费者们都读到了哪里
     protected volatile Sequence[] gatingSequences = new Sequence[0];
 
     /**

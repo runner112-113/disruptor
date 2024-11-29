@@ -118,6 +118,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
             throw new IllegalArgumentException("n must be > 0 and < bufferSize");
         }
 
+        // cas 先获取cursor 并加n
         long current = cursor.getAndAdd(n);
 
         long nextSequence = current + n;
@@ -256,6 +257,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
     {
         for (long sequence = lowerBound; sequence <= availableSequence; sequence++)
         {
+            // 判断当前槽是否被生产者写好了
             if (!isAvailable(sequence))
             {
                 return sequence - 1;
@@ -265,6 +267,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
         return availableSequence;
     }
 
+    // 计算该 sequence 已经经过了多少个完整的环形缓冲区
     private int calculateAvailabilityFlag(final long sequence)
     {
         return (int) (sequence >>> indexShift);
